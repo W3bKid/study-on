@@ -1,0 +1,11 @@
+{
+    "$schema": "/phpcs.xml",
+    "php_code_sniffer.enabled": true,
+    "symfony.enabled": true,
+    "indexer.exclude_patterns": [
+        "/vendor/**/Tests/**/*",
+        "/vendor/**/tests/**/*",
+        "/var/cache/**/*",
+        "/vendor/composer/**/*"
+    ]
+}
