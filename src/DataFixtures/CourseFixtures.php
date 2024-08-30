@@ -6,7 +6,6 @@ use App\Entity\Course;
 use App\Entity\Lesson;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
-use Symfony\Bundle\MakerBundle\Str;
 
 class CourseFixtures extends Fixture
 {
@@ -95,7 +94,7 @@ class CourseFixtures extends Fixture
             ],
         ]
     ];
-            
+
 
 
     public function load(ObjectManager $manager): void
@@ -105,7 +104,7 @@ class CourseFixtures extends Fixture
             $course->setTitle($title);
             $course->setDescription($courseData['description']);
             $course->setCharacterCode($courseData['character_code']);
-            
+
             foreach($courseData['lessons'] as $lessonData) {
                 $lesson = new Lesson();
                 $lesson->setCourseId($course);
@@ -114,8 +113,8 @@ class CourseFixtures extends Fixture
                 $lesson->setOrderNumber($lessonData['order_number']);
             }
 
-            $manager->persist($course);            
-            $manager->persist($lesson);            
+            $manager->persist($course);
+            $manager->persist($lesson);
         }
 
         $manager->flush();

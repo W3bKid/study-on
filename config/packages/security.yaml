@@ -9,9 +9,15 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+            form_login:
+                default_target_path: app_course_index
         main:
             lazy: true
             provider: users_in_memory
+            form_login:
+                default_target_path: app_course_index
+                login_path: app_course_index
+                check_path: app_course_index
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
