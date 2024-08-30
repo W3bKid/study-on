@@ -104,6 +104,7 @@ class CourseFixtures extends Fixture
             $course->setTitle($title);
             $course->setDescription($courseData['description']);
             $course->setCharacterCode($courseData['character_code']);
+            $manager->persist($course);
 
             foreach($courseData['lessons'] as $lessonData) {
                 $lesson = new Lesson();
@@ -111,12 +112,12 @@ class CourseFixtures extends Fixture
                 $lesson->setTitle($lessonData['title']);
                 $lesson->setContent($lessonData['content']);
                 $lesson->setOrderNumber($lessonData['order_number']);
+                $manager->persist($lesson);
             }
 
-            $manager->persist($course);
-            $manager->persist($lesson);
+
+            $manager->flush();
         }
 
-        $manager->flush();
     }
 }
