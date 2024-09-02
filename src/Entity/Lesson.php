@@ -14,9 +14,9 @@ class Lesson
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'lessons')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Course $course_id = null;
+    private ?Course $course = null;
 
     #[ORM\Column(length: 255)]
     private ?string $title = null;
@@ -32,14 +32,14 @@ class Lesson
         return $this->id;
     }
 
-    public function getCourseId(): ?Course
+    public function getCourse(): ?Course
     {
-        return $this->course_id;
+        return $this->course;
     }
 
-    public function setCourseId(?Course $course_id): static
+    public function setCourse(?Course $course): static
     {
-        $this->course_id = $course_id;
+        $this->course = $course;
 
         return $this;
     }

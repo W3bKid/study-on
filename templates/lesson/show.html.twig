@@ -5,12 +5,14 @@
 {% block body %}
     <h1>Lesson</h1>
 
+    <h2>
+        <a href="{{ path('app_course_show', {'id': lesson.course.id}) }}">
+            Course: {{ lesson.course.title }}
+        </a>
+    </h2>
+
     <table class="table">
         <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ lesson.id }}</td>
-            </tr>
             <tr>
                 <th>Title</th>
                 <td>{{ lesson.title }}</td>
@@ -19,14 +21,9 @@
                 <th>Content</th>
                 <td>{{ lesson.content }}</td>
             </tr>
-            <tr>
-                <th>Order_number</th>
-                <td>{{ lesson.orderNumber }}</td>
-            </tr>
         </tbody>
     </table>
 
-    <a href="{{ path('app_lesson_index') }}">back to list</a>
 
     <a href="{{ path('app_lesson_edit', {'id': lesson.id}) }}">edit</a>
 

@@ -108,7 +108,7 @@ class CourseFixtures extends Fixture
 
             foreach($courseData['lessons'] as $lessonData) {
                 $lesson = new Lesson();
-                $lesson->setCourseId($course);
+                $lesson->setCourse($course);
                 $lesson->setTitle($lessonData['title']);
                 $lesson->setContent($lessonData['content']);
                 $lesson->setOrderNumber($lessonData['order_number']);
