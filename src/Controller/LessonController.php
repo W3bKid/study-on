@@ -51,8 +51,6 @@ class LessonController extends AbstractController
     {
         $lesson->setCourse($lesson->getCourse());
 
-        // dd($lesson);
-
         return $this->render('lesson/show.html.twig', [
             'lesson' => $lesson,
         ]);
