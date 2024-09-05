@@ -4,14 +4,17 @@ namespace App\Form;
 
 use App\Entity\Course;
 use App\Entity\Lesson;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
+use phpDocumentor\Reflection\Types\Integer;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
 
 class LessonType extends AbstractType
 {
@@ -27,9 +30,18 @@ class LessonType extends AbstractType
         array $options
     ): void {
         $builder
-            ->add("title")
-            ->add("content", TextareaType::class)
-            ->add("order_number")
+            ->add("title", TextType::class, [
+                "label" => "Название урока",
+                "required" => true,
+            ])
+            ->add("content", TextareaType::class, [
+                "label" => "Наполение урока",
+                "requred" => true,
+            ])
+            ->add("order_number", IntegerType::class, [
+                "label" => "Порядковый номер",
+                "max" => 10000,
+            ])
             ->add("course_id", HiddenType::class);
 
         $builder->get("course_id")->addModelTransformer(
@@ -53,9 +65,3 @@ class LessonType extends AbstractType
         ]);
     }
 }
-
-// !== ModelTransformer?
-// ->add('course_id', EntityType::class, [
-//     'class' => Course::class,
-//     'choice_label' => 'id',
-// ])
