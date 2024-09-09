@@ -14,7 +14,7 @@ class Lesson
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'lessons')]
+    #[ORM\ManyToOne(inversedBy: "lessons")]
     #[ORM\JoinColumn(nullable: false)]
     private ?Course $course = null;
 
@@ -78,5 +78,10 @@ class Lesson
         $this->order_number = $order_number;
 
         return $this;
+    }
+
+    public function __toString()
+    {
+        return $this->getId();
     }
 }

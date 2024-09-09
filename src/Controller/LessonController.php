@@ -27,14 +27,15 @@ class LessonController extends AbstractController
     public function new(
         Request $request,
         EntityManagerInterface $entityManager,
-        CourseRepository $courseRepository
+        CourseRepository $repository
     ): Response {
-        $courseId = (int) $request->query->get("course_id");
-        $course = $courseRepository->find($courseId);
+        $courseId = $request->get("course_id");
+        $course = $repository->find($courseId);
         $lesson = new Lesson();
         $lesson->setCourse($course);
+
         $form = $this->createForm(LessonType::class, $lesson, [
-            "course_id" => $courseId,
+            "course_id" => (int) $courseId,
         ]);
         $form->handleRequest($request);
 
@@ -48,7 +49,6 @@ class LessonController extends AbstractController
                 Response::HTTP_SEE_OTHER
             );
         }
-
         return $this->render("lesson/new.html.twig", [
             "lesson" => $lesson,
             "form" => $form,

@@ -28,7 +28,7 @@ class Course
     /**
      * @var Collection<int, Lesson>
      */
-    #[ORM\OneToMany(targetEntity: Lesson::class, mappedBy: 'course')]
+    #[ORM\OneToMany(targetEntity: Lesson::class, mappedBy: "course")]
     private Collection $lessons;
 
     public function __construct()
@@ -105,5 +105,10 @@ class Course
         }
 
         return $this;
+    }
+
+    public function __toString()
+    {
+        return get_class($this);
     }
 }

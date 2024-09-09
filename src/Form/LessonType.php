@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Course;
 use App\Entity\Lesson;
 use App\Repository\CourseRepository;
+use COM;
 use Doctrine\ORM\EntityManagerInterface;
 use phpDocumentor\Reflection\Types\Integer;
 use Symfony\Component\Form\AbstractType;
@@ -45,16 +46,19 @@ class LessonType extends AbstractType
             ])
             ->add("course", HiddenType::class, [
                 "data" => $options["course_id"],
+                "mapped" => false,
             ]);
 
         $builder->get("course")->addModelTransformer(
             new CallbackTransformer(
-                function (int $courseId) {
-                    return $this->entityManager
+                function ($courseInt) {
+                    $course = $this->entityManager
                         ->getRepository(Course::class)
-                        ->find($courseId);
+                        ->find($courseInt);
+                    return $course;
                 },
-                function (Course $course) {
+                function ($courseObj) {
+                    $course = new $courseObj();
                     return $course->getId();
                 }
             )
