@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Course;
 use App\Entity\Lesson;
+use App\Repository\CourseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use phpDocumentor\Reflection\Types\Integer;
 use Symfony\Component\Form\AbstractType;
@@ -36,23 +37,25 @@ class LessonType extends AbstractType
             ])
             ->add("content", TextareaType::class, [
                 "label" => "Наполение урока",
-                "requred" => true,
+                "required" => true,
             ])
             ->add("order_number", IntegerType::class, [
                 "label" => "Порядковый номер",
-                "max" => 10000,
+                "constraints" => [new Length(max: 255)],
             ])
-            ->add("course_id", HiddenType::class);
+            ->add("course", HiddenType::class, [
+                "data" => $options["course_id"],
+            ]);
 
-        $builder->get("course_id")->addModelTransformer(
+        $builder->get("course")->addModelTransformer(
             new CallbackTransformer(
-                function ($courseObj) {
-                    return $courseObj->getId();
-                },
-                function ($courseId) {
+                function (int $courseId) {
                     return $this->entityManager
                         ->getRepository(Course::class)
                         ->find($courseId);
+                },
+                function (Course $course) {
+                    return $course->getId();
                 }
             )
         );
@@ -62,6 +65,8 @@ class LessonType extends AbstractType
     {
         $resolver->setDefaults([
             "data_class" => Lesson::class,
+            "course_id" => 0,
         ]);
+        $resolver->setAllowedTypes("course_id", "int");
     }
 }
