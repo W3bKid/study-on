@@ -1,1 +1,26 @@
-er/study-on/vendor/symfony/console/Helper/ProgressBar.php";b:1;s:81:"file:///home/yura/Projects/other/study-on/vendor/symfony/console/Helper/Table.php";b:1;s:90:"file:///home/yura/Projects/other/study-on/vendor/symfony/console/Helper/QuestionHelper.php";b:1;s:92:"file:///home/yura/Projects/other/study-on/vendor/symfony/co
+{
+    "controllers": {
+        "@symfony/ux-autocomplete": {
+            "autocomplete": {
+                "enabled": true,
+                "fetch": "eager",
+                "autoimport": {
+                    "tom-select/dist/css/tom-select.default.css": true,
+                    "tom-select/dist/css/tom-select.bootstrap4.css": false,
+                    "tom-select/dist/css/tom-select.bootstrap5.css": false
+                }
+            }
+        },
+        "@symfony/ux-turbo": {
+            "turbo-core": {
+                "enabled": true,
+                "fetch": "eager"
+            },
+            "mercure-turbo-stream": {
+                "enabled": false,
+                "fetch": "eager"
+            }
+        }
+    },
+    "entrypoints": []
+}
