@@ -8,6 +8,7 @@ use App\Repository\CourseRepository;
 use COM;
 use Doctrine\ORM\EntityManagerInterface;
 use phpDocumentor\Reflection\Types\Integer;
+use Symfony\Bundle\MakerBundle\Str;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
@@ -17,6 +18,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\LessThan;
 
 class LessonType extends AbstractType
 {
@@ -42,7 +44,7 @@ class LessonType extends AbstractType
             ])
             ->add("order_number", IntegerType::class, [
                 "label" => "Порядковый номер",
-                "constraints" => [new Length(max: 255)],
+                "constraints" => [new LessThan(255)],
             ])
             ->add("course", HiddenType::class, [
                 "data" => $options["course_id"],
