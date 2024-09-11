@@ -19,7 +19,7 @@ class LessonController extends AbstractController
     public function index(LessonRepository $lessonRepository): Response
     {
         return $this->render("lesson/index.html.twig", [
-            "lessons" => $lessonRepository->findBy([], ["order_number"]),
+            "lessons" => $lessonRepository->findAll(),
         ]);
     }
 
@@ -78,8 +78,8 @@ class LessonController extends AbstractController
             $entityManager->flush();
 
             return $this->redirectToRoute(
-                "app_lesson_index",
-                [],
+                "app_lesson_show",
+                ["id" => $lesson->getId()],
                 Response::HTTP_SEE_OTHER
             );
         }
