@@ -1,4 +1,10 @@
+{% form_theme form 'bootstrap_5_layout.html.twig' %}
+
 {{ form_start(form) }}
     {{ form_widget(form) }}
-    <button class="btn">{{ button_label|default('Save') }}</button>
+    <button class="btn btn-primary">Сохранить</button>
 {{ form_end(form) }}
+
+<hr>
+
+<a class="btn btn-outline-secondary" href="{{path("app_course_index")}}">К списку курсов</a>

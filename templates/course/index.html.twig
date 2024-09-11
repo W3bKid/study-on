@@ -3,39 +3,33 @@
 {% block title %}Course index{% endblock %}
 
 {% block body %}
-    <h1>Course index</h1>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
+    <nav id="" class="bg-body-tertiary p-3 m-3">
+      <h1 class="display-5" href="#">Study on</h1>
+    </nav>
+
+    <h1 class="m-3">Курсы</h1>
+
+    <div class="row row-cols-1 row-cols-md-2 g-4 m-3" >
         {% for course in courses %}
-            <tr>
-                <td><a href="{{ path('app_course_show', {'id': course.id}) }}">{{ course.title }}</a></td>
-                <td>{{ course.description }}</td>
-            </tr>
+        <div class="col">
+			<div class="card">
+				<div class="card-body">
+					<h5 class="card-title">
+						<p >{{ course.title }}</p>
+					</h5>
+					<p class="card-text">{{ course.description }}</p>
+					<a href="{{ path('app_course_show', {'id': course.id}) }}" class="blockquote">
+						Пройти
+					</a>
+				</div>
+			</div>
+        </div>
         {% else %}
             <tr>
                 <td colspan="5">no records found</td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="card">
-      <div class="card-header">
-        Featured
-      </div>
-      <div class="card-body">
-        <h5 class="card-title">Special title treatment</h5>
-        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-        <a href="#" class="btn btn-primary">Go somewhere</a>
-      </div>
     </div>
-
-    <a href="{{ path('app_course_new') }}">Create new</a>
+    <a class="btn btn-outline-secondary" href="{{ path('app_course_new') }}">Create new</a>
 {% endblock %}

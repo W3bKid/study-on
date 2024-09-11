@@ -6,6 +6,8 @@ use App\Repository\CourseRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Query\Expr\Func;
+use phpDocumentor\Reflection\File;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CourseRepository::class)]
@@ -110,6 +112,6 @@ class Course
 
     public function __toString()
     {
-        return get_class($this);
+        return $this->id;
     }
 }
