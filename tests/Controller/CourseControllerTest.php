@@ -3,122 +3,145 @@
 namespace App\Test\Controller;
 
 use App\Entity\Course;
+use App\Entity\Lesson;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\String\ByteString;
+use Faker\Factory;
 
 class CourseControllerTest extends WebTestCase
 {
     private KernelBrowser $client;
     private EntityManagerInterface $manager;
     private EntityRepository $repository;
-    private string $path = '/course/';
+    private string $path = "/courses/";
+
+    protected $faker;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $this->manager = static::getContainer()->get('doctrine')->getManager();
+        $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Course::class);
-
-        foreach ($this->repository->findAll() as $object) {
-            $this->manager->remove($object);
-        }
-
-        $this->manager->flush();
+        $this->faker = Factory::create();
     }
 
     public function testIndex(): void
     {
-        $crawler = $this->client->request('GET', $this->path);
+        $crawler = $this->client->request("GET", $this->path);
 
         self::assertResponseStatusCodeSame(200);
-        self::assertPageTitleContains('Course index');
+        self::assertPageTitleContains("Course index");
 
-        // Use the $crawler to perform additional assertions e.g.
-        // self::assertSame('Some text on the page', $crawler->filter('.p')->first());
+        $courses = $this->repository->findAll();
+
+        for($i = 0, $count = count($courses); $count > $i; $i++) {
+            self::assertSame($courses[$i]->getTitle(), trim($crawler->filter('.card-title')->getNode($i)->nodeValue));
+            self::assertSame($courses[$i]->getDescription(), trim($crawler->filter('.card-text')->getNode($i)->nodeValue));
+        }
     }
 
     public function testNew(): void
     {
-        $this->markTestIncomplete();
+        $crawler = $this->client->request("GET", $this->path);
+
+        $startCount = $this->repository->count([]);
+
         $this->client->request('GET', sprintf('%snew', $this->path));
 
         self::assertResponseStatusCodeSame(200);
 
-        $this->client->submitForm('Save', [
-            'course[character_code]' => 'Testing',
-            'course[title]' => 'Testing',
-            'course[description]' => 'Testing',
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" =>  ByteString::fromRandom(16)->toString(),
+            "course[title]" => ByteString::fromRandom(16)->toString(),
+            "course[description]" => ByteString::fromRandom(32)->toString(),
         ]);
 
         self::assertResponseRedirects($this->path);
 
-        self::assertSame(1, $this->repository->count([]));
+        $endCount = $this->repository->count([]);
+
+        self::assertSame($startCount + 1, $endCount);
     }
 
     public function testShow(): void
     {
-        $this->markTestIncomplete();
         $fixture = new Course();
-        $fixture->setCharacter_code('My Title');
-        $fixture->setTitle('My Title');
-        $fixture->setDescription('My Title');
+        $fixture->setCharacterCode(ByteString::fromRandom(16)->toString());
+        $fixture->setTitle(ByteString::fromRandom(16)->toString());
+        $fixture->setDescription(ByteString::fromRandom(16)->toString());
 
         $this->manager->persist($fixture);
         $this->manager->flush();
 
-        $this->client->request('GET', sprintf('%s%s', $this->path, $fixture->getId()));
+        $this->client->request(
+            "GET",
+            sprintf("%s%s", $this->path, $fixture->getId())
+        );
 
         self::assertResponseStatusCodeSame(200);
-        self::assertPageTitleContains('Course');
+        self::assertPageTitleContains("Course");
 
         // Use assertions to check that the properties are properly displayed.
     }
 
     public function testEdit(): void
     {
-        $this->markTestIncomplete();
+        $newCode = ByteString::fromRandom(16)->toString();
+        $newTitle = ByteString::fromRandom(16)->toString();
+        $newDescription = ByteString::fromRandom(255)->toString();
+
         $fixture = new Course();
-        $fixture->setCharacter_code('Value');
-        $fixture->setTitle('Value');
-        $fixture->setDescription('Value');
+        $fixture->setCharacterCode(ByteString::fromRandom(16)->toString());
+        $fixture->setTitle(ByteString::fromRandom(16)->toString());
+        $fixture->setDescription(ByteString::fromRandom(255)->toString());
 
         $this->manager->persist($fixture);
         $this->manager->flush();
 
-        $this->client->request('GET', sprintf('%s%s/edit', $this->path, $fixture->getId()));
 
-        $this->client->submitForm('Update', [
-            'course[character_code]' => 'Something New',
-            'course[title]' => 'Something New',
-            'course[description]' => 'Something New',
+        $this->client->request(
+            "GET",
+            sprintf("%s%s/edit", $this->path, $fixture->getId())
+        );
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => $newCode,
+            "course[title]" => $newTitle,
+            "course[description]" => $newDescription,
         ]);
 
-        self::assertResponseRedirects('/course/');
+        $updatedCourse = $this->repository->find($fixture->getId());
 
-        $fixture = $this->repository->findAll();
+        self::assertSame($newCode, $updatedCourse->getCharacterCode());
+        self::assertSame($newTitle, $updatedCourse->getTitle());
+        self::assertSame($newDescription, $updatedCourse->getDescription());
 
-        self::assertSame('Something New', $fixture[0]->getCharacter_code());
-        self::assertSame('Something New', $fixture[0]->getTitle());
-        self::assertSame('Something New', $fixture[0]->getDescription());
+        self::assertResponseRedirects("/courses/");
+
     }
 
     public function testRemove(): void
     {
-        $this->markTestIncomplete();
+        $count = $this->repository->count([]);
+
         $fixture = new Course();
-        $fixture->setCharacter_code('Value');
-        $fixture->setTitle('Value');
-        $fixture->setDescription('Value');
+        $fixture->setCharacterCode(ByteString::fromRandom(16)->toString());
+        $fixture->setTitle(ByteString::fromRandom(16)->toString());
+        $fixture->setDescription(ByteString::fromRandom(255)->toString());
 
         $this->manager->persist($fixture);
         $this->manager->flush();
 
-        $this->client->request('GET', sprintf('%s%s', $this->path, $fixture->getId()));
-        $this->client->submitForm('Delete');
+        $this->client->request(
+            "GET",
+            sprintf("%s%s", $this->path, $fixture->getId())
+        );
+        $this->client->submitForm("Удалить");
 
-        self::assertResponseRedirects('/course/');
-        self::assertSame(0, $this->repository->count([]));
+        self::assertResponseRedirects("/courses/");
+        self::assertSame($count, $this->repository->count([]));
     }
 }
