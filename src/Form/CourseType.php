@@ -31,6 +31,7 @@ class CourseType extends AbstractType
                     new NotBlank(
                         message: "Поле обязательно должно быть заполнено"
                     ),
+                    // new UniqueEntity(),
                 ],
             ])
             ->add("title", TextType::class, [
@@ -65,7 +66,7 @@ class CourseType extends AbstractType
             "constraints" => [
                 new UniqueEntity([
                     "entityClass" => Course::class,
-                    "fields" => "title",
+                    "fields" => ["character_code"],
                 ]),
             ],
         ]);

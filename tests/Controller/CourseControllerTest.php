@@ -2,6 +2,7 @@
 
 namespace App\Test\Controller;
 
+use App\DataFixtures\CourseFixtures;
 use App\Entity\Course;
 use App\Entity\Lesson;
 use Doctrine\ORM\EntityManagerInterface;
@@ -9,10 +10,15 @@ use Doctrine\ORM\EntityRepository;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\String\ByteString;
+use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
+use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
 use Faker\Factory;
 
 class CourseControllerTest extends WebTestCase
 {
+    /** @var AbstractDatabaseTool */
+    protected $databaseTool;
+
     private KernelBrowser $client;
     private EntityManagerInterface $manager;
     private EntityRepository $repository;
@@ -22,10 +28,17 @@ class CourseControllerTest extends WebTestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->client = static::createClient();
         $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Course::class);
         $this->faker = Factory::create();
+        $this->databaseTool = static::getContainer()
+            ->get(DatabaseToolCollection::class)
+            ->get();
+
+        $this->databaseTool->loadFixtures([CourseFixtures::class]);
     }
 
     public function testIndex(): void
@@ -37,9 +50,15 @@ class CourseControllerTest extends WebTestCase
 
         $courses = $this->repository->findAll();
 
-        for($i = 0, $count = count($courses); $count > $i; $i++) {
-            self::assertSame($courses[$i]->getTitle(), trim($crawler->filter('.card-title')->getNode($i)->nodeValue));
-            self::assertSame($courses[$i]->getDescription(), trim($crawler->filter('.card-text')->getNode($i)->nodeValue));
+        for ($i = 0, $count = count($courses); $count > $i; $i++) {
+            self::assertSame(
+                $courses[$i]->getTitle(),
+                trim($crawler->filter(".card-title")->getNode($i)->nodeValue)
+            );
+            self::assertSame(
+                $courses[$i]->getDescription(),
+                trim($crawler->filter(".card-text")->getNode($i)->nodeValue)
+            );
         }
     }
 
@@ -49,12 +68,12 @@ class CourseControllerTest extends WebTestCase
 
         $startCount = $this->repository->count([]);
 
-        $this->client->request('GET', sprintf('%snew', $this->path));
+        $this->client->request("GET", sprintf("%snew", $this->path));
 
         self::assertResponseStatusCodeSame(200);
 
         $this->client->submitForm("Сохранить", [
-            "course[character_code]" =>  ByteString::fromRandom(16)->toString(),
+            "course[character_code]" => ByteString::fromRandom(16)->toString(),
             "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => ByteString::fromRandom(32)->toString(),
         ]);
@@ -101,7 +120,6 @@ class CourseControllerTest extends WebTestCase
         $this->manager->persist($fixture);
         $this->manager->flush();
 
-
         $this->client->request(
             "GET",
             sprintf("%s%s/edit", $this->path, $fixture->getId())
@@ -120,7 +138,6 @@ class CourseControllerTest extends WebTestCase
         self::assertSame($newDescription, $updatedCourse->getDescription());
 
         self::assertResponseRedirects("/courses/");
-
     }
 
     public function testRemove(): void
@@ -143,5 +160,88 @@ class CourseControllerTest extends WebTestCase
 
         self::assertResponseRedirects("/courses/");
         self::assertSame($count, $this->repository->count([]));
+    }
+
+    public function testEmptyTitle(): void
+    {
+        $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => "noviy_course",
+            "course[title]" => "",
+            "course[description]" => "Самый новый курс",
+        ]);
+
+        self::assertResponseIsUnprocessable();
+    }
+
+    public function testToLongTitle(): void
+    {
+        $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => "noviy_course",
+            "course[title]" => ByteString::fromRandom(300)->toString(),
+            "course[description]" => "Самый новый курс",
+        ]);
+
+        self::assertResponseIsUnprocessable();
+    }
+
+    public function testEmptyCode(): void
+    {
+        $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => "noviy_course",
+            "course[title]" => "",
+            "course[description]" => "Самый новый курс",
+        ]);
+
+        self::assertResponseIsUnprocessable();
+    }
+
+    public function testToLongCode(): void
+    {
+        $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => ByteString::fromRandom(300)->toString(),
+            "course[title]" => ByteString::fromRandom(16)->toString(),
+            "course[description]" => "Самый новый курс",
+        ]);
+
+        self::assertResponseIsUnprocessable();
+        self::assertLessThan(300, 255);
+    }
+
+    public function testSameCodeExists(): void
+    {
+        $course = $this->repository->findAll()[0];
+
+        $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => $course->getCharacterCode(),
+            "course[title]" => ByteString::fromRandom(16)->toString(),
+            "course[description]" => "Самый новый курс",
+        ]);
+
+        self::assertResponseIsUnprocessable();
+    }
+
+    public function testToLongDescription(): void
+    {
+        $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
+
+        $this->client->submitForm("Сохранить", [
+            "course[character_code]" => ByteString::fromRandom(
+                1000
+            )->toString(),
+            "course[title]" => ByteString::fromRandom(16)->toString(),
+            "course[description]" => "Самый новый курс",
+        ]);
+
+        self::assertResponseIsUnprocessable();
     }
 }

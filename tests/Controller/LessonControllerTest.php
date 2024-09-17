@@ -2,6 +2,7 @@
 
 namespace App\Test\Controller;
 
+use App\Entity\Course;
 use App\Entity\Lesson;
 use App\Kernel;
 use Doctrine\ORM\EntityManagerInterface;
@@ -11,6 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\String\ByteString;
 
 class LessonControllerTest extends WebTestCase
 {
@@ -24,20 +26,6 @@ class LessonControllerTest extends WebTestCase
         $this->client = static::createClient();
         $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Lesson::class);
-
-        // foreach ($this->repository->findAll() as $object) {
-        //     $this->manager->remove($object);
-        // }
-
-        // $input = new ArrayInput([
-        //     "command" => "d:f:l --env=test",
-        // ]);
-
-        // $kernel = new KernelInterface();
-        // $application = new Application($kernel);
-        // $application->run($input);
-
-        // $this->manager->flush();
     }
 
     public function testIndex(): void
@@ -51,31 +39,38 @@ class LessonControllerTest extends WebTestCase
 
     public function testNew(): void
     {
-        $this->markTestIncomplete();
-        $this->client->request("GET", sprintf("%snew", $this->path));
+        $lessons = $this->repository->findAll();
+
+        $course = $lessons[0]->getCourse();
+
+        $courseId = $course->getId();
+
+        $this->client->request(
+            "GET",
+            sprintf("%snew%s", $this->path, "?course_id=$courseId")
+        );
 
         self::assertResponseStatusCodeSame(200);
 
         $this->client->submitForm("Save", [
-            "lesson[title]" => "Testing",
-            "lesson[content]" => "Testing",
-            "lesson[order_number]" => "Testing",
-            "lesson[course_id]" => "Testing",
+            "lesson[title]" => ByteString::fromRandom(16)->toString(),
+            "lesson[content]" => ByteString::fromRandom(16)->toString(),
+            "lesson[order_number]" => rand(1, 10),
         ]);
 
-        self::assertResponseRedirects($this->path);
-
-        self::assertSame(1, $this->repository->count([]));
+        self::assertResponseRedirects(sprintf("/courses/%s", $courseId));
+        self::assertSame(count($lessons) + 1, $this->repository->count([]));
     }
 
     public function testShow(): void
     {
-        $this->markTestIncomplete();
+        $course = $this->manager->getRepository(Course::class)->findAll()[0];
+
         $fixture = new Lesson();
-        $fixture->setTitle("My Title");
-        $fixture->setContent("My Title");
-        $fixture->setOrder_number("My Title");
-        $fixture->setCourse_id("My Title");
+        $fixture->setTitle(ByteString::fromRandom(16)->toString());
+        $fixture->setContent(ByteString::fromRandom(16)->toString());
+        $fixture->setOrderNumber(rand(1, 10));
+        $fixture->setCourse($course);
 
         $this->manager->persist($fixture);
         $this->manager->flush();
@@ -93,46 +88,41 @@ class LessonControllerTest extends WebTestCase
 
     public function testEdit(): void
     {
-        $this->markTestIncomplete();
-        $fixture = new Lesson();
-        $fixture->setTitle("Value");
-        $fixture->setContent("Value");
-        $fixture->setOrder_number("Value");
-        $fixture->setCourse_id("Value");
-
-        $this->manager->persist($fixture);
-        $this->manager->flush();
+        $lesson = $this->repository->findAll([])[0];
+        $lessonId = $lesson->getId();
 
         $this->client->request(
             "GET",
-            sprintf("%s%s/edit", $this->path, $fixture->getId())
+            sprintf("%s%s/edit", $this->path, $lessonId)
         );
+
+        $orderNumber = rand(1, 100);
 
         $this->client->submitForm("Update", [
             "lesson[title]" => "Something New",
             "lesson[content]" => "Something New",
-            "lesson[order_number]" => "Something New",
-            "lesson[course_id]" => "Something New",
+            "lesson[order_number]" => $orderNumber,
         ]);
 
-        self::assertResponseRedirects("/lesson/");
+        $updatedLesson = $this->repository->find($lessonId);
 
-        $fixture = $this->repository->findAll();
-
-        self::assertSame("Something New", $fixture[0]->getTitle());
-        self::assertSame("Something New", $fixture[0]->getContent());
-        self::assertSame("Something New", $fixture[0]->getOrder_number());
-        self::assertSame("Something New", $fixture[0]->getCourse_id());
+        self::assertResponseRedirects("/lessons/$lessonId");
+        self::assertSame("Something New", $updatedLesson->getTitle());
+        self::assertSame("Something New", $updatedLesson->getContent());
+        self::assertSame($orderNumber, $updatedLesson->getOrderNumber());
     }
 
     public function testRemove(): void
     {
-        $this->markTestIncomplete();
+        $course = $this->manager->getRepository(Course::class)->findAll()[0];
+        $courseId = $course->getId();
+        $lessonsCount = $this->repository->count([]);
+
         $fixture = new Lesson();
-        $fixture->setTitle("Value");
-        $fixture->setContent("Value");
-        $fixture->setOrder_number("Value");
-        $fixture->setCourse_id("Value");
+        $fixture->setTitle(ByteString::fromRandom(16)->toString());
+        $fixture->setContent(ByteString::fromRandom(16)->toString());
+        $fixture->setOrderNumber(rand(1, 10));
+        $fixture->setCourse($course);
 
         $this->manager->persist($fixture);
         $this->manager->flush();
@@ -141,9 +131,9 @@ class LessonControllerTest extends WebTestCase
             "GET",
             sprintf("%s%s", $this->path, $fixture->getId())
         );
-        $this->client->submitForm("Delete");
+        $this->client->submitForm("Удалить");
 
-        self::assertResponseRedirects("/lesson/");
-        self::assertSame(0, $this->repository->count([]));
+        self::assertResponseRedirects("/courses/$courseId");
+        self::assertSame($lessonsCount, $this->repository->count([]));
     }
 }

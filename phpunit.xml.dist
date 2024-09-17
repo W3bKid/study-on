@@ -11,5 +11,6 @@
         <server name="SYMFONY_PHPUNIT_VERSION" value="7.5" />
         <server name="KERNEL_CLASS" value="App\Kernel" />
         <server name="DATABASE_URL" value="pgsql://pguser:pguser@postgres:5432/study_on_test" />
+        <server name="MESSENGER_TRANSPORT_DSN" value="doctrine://default?auto_setup=0" />
     </php>
 </phpunit>
