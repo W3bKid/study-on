@@ -193,8 +193,8 @@ class CourseControllerTest extends WebTestCase
         $this->client->request("GET", sprintf("%s%s", $this->path, "new"));
 
         $this->client->submitForm("Сохранить", [
-            "course[character_code]" => "noviy_course",
-            "course[title]" => "",
+            "course[character_code]" => "",
+            "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => "Самый новый курс",
         ]);
 

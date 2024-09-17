@@ -52,7 +52,7 @@ class LessonControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(200);
 
-        $this->client->submitForm("Save", [
+        $this->client->submitForm("Сохранить", [
             "lesson[title]" => ByteString::fromRandom(16)->toString(),
             "lesson[content]" => ByteString::fromRandom(16)->toString(),
             "lesson[order_number]" => rand(1, 10),
@@ -98,7 +98,7 @@ class LessonControllerTest extends WebTestCase
 
         $orderNumber = rand(1, 100);
 
-        $this->client->submitForm("Update", [
+        $this->client->submitForm("Обновить", [
             "lesson[title]" => "Something New",
             "lesson[content]" => "Something New",
             "lesson[order_number]" => $orderNumber,
@@ -135,5 +135,62 @@ class LessonControllerTest extends WebTestCase
 
         self::assertResponseRedirects("/courses/$courseId");
         self::assertSame($lessonsCount, $this->repository->count([]));
+    }
+
+    public function testEmptyTitle(): void
+    {
+        $course = $this->manager->getRepository(Course::class)->findAll()[0];
+        $courseId = $course->getId();
+
+        $this->client->request(
+            "GET",
+            sprintf("%s%s%s", $this->path, "new", "?course_id=$courseId")
+        );
+
+        $this->client->submitForm("Сохранить", [
+            "lesson[title]" => "",
+            "lesson[content]" => "Something New",
+            "lesson[order_number]" => rand(1, 10),
+        ]);
+
+        self::assertResponseIsUnprocessable();
+    }
+
+    public function testToLongTitle(): void
+    {
+        $course = $this->manager->getRepository(Course::class)->findAll()[0];
+        $courseId = $course->getId();
+
+        $this->client->request(
+            "GET",
+            sprintf("%s%s%s", $this->path, "new", "?course_id=$courseId")
+        );
+
+        $this->client->submitForm("Сохранить", [
+            "lesson[title]" => "",
+            "lesson[content]" => ByteString::fromRandom(300)->toString(),
+            "lesson[order_number]" => rand(1, 10),
+        ]);
+
+        self::assertResponseIsUnprocessable();
+    }
+
+    public function testEmptyContent(): void
+    {
+        $course = $this->manager->getRepository(Course::class)->findAll()[0];
+        $courseId = $course->getId();
+
+        $this->client->request(
+            "GET",
+            sprintf("%s%s%s", $this->path, "new", "?course_id=$courseId")
+        );
+
+        $this->client->submitForm("Сохранить", [
+            "lesson[title]" => ByteString::fromRandom(300)->toString(),
+            "lesson[content]" => "",
+            "lesson[order_number]" => rand(1, 10),
+        ]);
+
+        self::assertResponseIsUnprocessable();
     }
 }
