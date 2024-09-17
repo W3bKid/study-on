@@ -12,7 +12,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\LessThan;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class LessonType extends AbstractType
 {
@@ -35,14 +37,40 @@ class LessonType extends AbstractType
             ->add("title", TextType::class, [
                 "label" => "Название урока",
                 "required" => true,
+                "constraints" => [
+                    new Length(
+                        max: 255,
+                        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+                    ),
+                    new NotBlank(
+                        message: "Поле обязательно должно быть заполнено"
+                    ),
+                ],
             ])
             ->add("content", TextareaType::class, [
                 "label" => "Наполение урока",
                 "required" => true,
+                "constraints" => [
+                    new Length(
+                        max: 255,
+                        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+                    ),
+                    new NotBlank(
+                        message: "Поле обязательно должно быть заполнено"
+                    ),
+                ],
             ])
             ->add("order_number", IntegerType::class, [
                 "label" => "Порядковый номер",
-                "constraints" => [new LessThan(10000)],
+                "constraints" => [
+                    new LessThan(
+                        10000,
+                        message: "Порядковый номер не может быть большe 10 000"
+                    ),
+                    new NotBlank(
+                        message: "Поле обязательно должно быть заполнено"
+                    ),
+                ],
             ])
             ->add("course", HiddenType::class, [
                 "data" => $options["course_id"],

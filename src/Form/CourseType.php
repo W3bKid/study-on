@@ -10,6 +10,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Unique;
 
 class CourseType extends AbstractType
@@ -22,17 +23,38 @@ class CourseType extends AbstractType
             ->add("character_code", TextType::class, [
                 "label" => "Символьный код",
                 "required" => true,
-                "constraints" => [new Length(max: 255)],
+                "constraints" => [
+                    new Length(
+                        max: 255,
+                        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+                    ),
+                    new NotBlank(
+                        message: "Поле обязательно должно быть заполнено"
+                    ),
+                ],
             ])
             ->add("title", TextType::class, [
                 "label" => "Название курса",
                 "required" => true,
-                "constraints" => [new Length(max: 255)],
+                "constraints" => [
+                    new Length(
+                        max: 255,
+                        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+                    ),
+                    new NotBlank(
+                        message: "Поле обязательно должно быть заполнено"
+                    ),
+                ],
             ])
             ->add("description", TextareaType::class, [
                 "label" => "Описание",
                 "required" => false,
-                "constraints" => [new Length(max: 1000)],
+                "constraints" => [
+                    new Length(
+                        max: 1000,
+                        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+                    ),
+                ],
             ]);
     }
 
