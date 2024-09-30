@@ -31,6 +31,7 @@ class Course
      * @var Collection<int, Lesson>
      */
     #[ORM\OneToMany(targetEntity: Lesson::class, mappedBy: "course")]
+    #[ORM\JoinColumn(referencedColumnName: "id", onDelete: "CASCADE")]
     #[ORM\OrderBy(["order_number" => "ASC"])]
     private Collection $lessons;
 
