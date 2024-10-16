@@ -19,12 +19,30 @@ class Course
     private ?int $id = null;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\Length(
+        max: 255,
+        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+    )]
+    #[Assert\NotBlank(
+        message: "Поле обязательно должно быть заполнено"
+    )]
     private string $character_code;
 
     #[ORM\Column(length: 255)]
+    #[Assert\Length(
+        max: 255,
+        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+    )]
+    #[Assert\NotBlank(
+        message: "Поле обязательно должно быть заполнено"
+    )]
     private string $title;
 
     #[ORM\Column(length: 1000, nullable: true)]
+    #[Assert\Length(
+        max: 1000,
+        maxMessage: "Символьный код должен быть не длиннее {{ limit }} символов"
+    )]
     private ?string $description = null;
 
     /**

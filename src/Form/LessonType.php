@@ -65,7 +65,7 @@ class LessonType extends AbstractType
                 "constraints" => [
                     new LessThan(
                         10000,
-                        message: "Порядковый номер не может быть большe 10 000"
+                        message: "Порядковый номер не может быть больше 10 000"
                     ),
                     new NotBlank(
                         message: "Поле обязательно должно быть заполнено"

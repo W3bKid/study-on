@@ -23,8 +23,8 @@
                 <td>{{ lesson.content }}</td>
                 <td>{{ lesson.orderNumber }}</td>
                 <td>
-                    <a href="{{ path('app_lesson_show', {'id': lesson.id}) }}">show</a>
-                    <a href="{{ path('app_lesson_edit', {'id': lesson.id}) }}">edit</a>
+                    <a href="{{ path('app_lesson_show', {'id': lesson.id}) }}">Показать</a>
+                    <a href="{{ path('app_lesson_edit', {'id': lesson.id}) }}">Редактировать</a>
                 </td>
             </tr>
         {% else %}
@@ -35,5 +35,5 @@
         </tbody>
     </table>
 
-    <a href="{{ path('app_lesson_new') }}">Create new</a>
+    <a href="{{ path('app_lesson_new') }}">Создать новый</a>
 {% endblock %}

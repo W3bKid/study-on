@@ -4,7 +4,6 @@ namespace App\Test\Controller;
 
 use App\DataFixtures\CourseFixtures;
 use App\Entity\Course;
-use App\Entity\Lesson;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -35,8 +34,7 @@ class CourseControllerTest extends WebTestCase
         $this->repository = $this->manager->getRepository(Course::class);
         $this->faker = Factory::create();
         $this->databaseTool = static::getContainer()
-            ->get(DatabaseToolCollection::class)
-            ->get();
+            ->get(DatabaseToolCollection::class);
 
         $this->databaseTool->loadFixtures([CourseFixtures::class]);
     }
