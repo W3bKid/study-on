@@ -33,10 +33,18 @@ class CourseControllerTest extends WebTestCase
         $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Course::class);
         $this->faker = Factory::create();
+//        $this->databaseTool = static::getContainer()
+//            ->get(DatabaseToolCollection::class)
+//            ->get();
+//
+//        $this->databaseTool->loadFixtures([CourseFixtures::class]);
+
         $this->databaseTool = static::getContainer()
-            ->get(DatabaseToolCollection::class);
+            ->get(DatabaseToolCollection::class)
+            ->get();
 
         $this->databaseTool->loadFixtures([CourseFixtures::class]);
+
     }
 
     public function testIndex(): void
