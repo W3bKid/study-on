@@ -6,6 +6,8 @@ use App\Repository\LessonRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Constraints\Range;
+use Symfony\Component\Validator\Constraints\Type;
 
 #[ORM\Entity(repositoryClass: LessonRepository::class)]
 class Lesson
@@ -40,12 +42,14 @@ class Lesson
     private ?string $content = null;
 
     #[ORM\Column]
-    #[Assert\Count(
+    #[Assert\NotBlank()]
+    #[ASsert\Type(type: Types::INTEGER)]
+    #[Assert\Range(
+        notInRangeMessage: "Порядковый номер не должен быть меньше 0 и больше 10 000",
         min: 0,
-        max: 10000,
-        minMessage: "Порядковый номер не должен быть меньше 0",
-        maxMessage: "Порядковый номер не может быть больше 10 000"
+        max: 10000
     )]
+
     private ?int $order_number = null;
 
     public function getId(): ?int

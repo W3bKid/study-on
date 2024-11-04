@@ -4,8 +4,8 @@ namespace App\Service;
 
 use App\Exception\BillingUnavailableException;
 use App\Security\User;
+use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
-use Symfony\Component\Security\Core\User\UserInterface;
 
 class BillingClient
 {
@@ -37,13 +37,17 @@ class BillingClient
         return json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
     }
 
-    public function currentUser(string $token)
+    public function currentUser(string $token): User
     {
         $url = $this->baseApiPath . 'users/current';
         $headers = ['Content-Type' => 'application/json', 'Authorization' => 'Bearer ' . $token];
         $response = $this->request(url: $url, headers: $headers);
         $userData = json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
-        return (new User())->setEmail($userData['username'])->setRoles($userData['roles'])->setApiToken($token);
+        return (new User())
+            ->setEmail($userData['username'])
+            ->setRoles($userData['roles'])
+            ->setApiToken($token)
+            ->setBalance($userData['balance']);
     }
 
     public function refreshToken(User $user): User
@@ -52,6 +56,19 @@ class BillingClient
         $response = $this->request(url: $url, method: 'POST');
         $tokens = json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
         return $user->setRefreshToken($tokens['refreshToken'])->setApiToken($tokens['token']);
+    }
+
+    public function register(string $username, string $password): User|string
+    {
+        $url = $this->baseApiPath . 'register';
+        $response = $this->request(url: $url, body: ['email' => $username, 'password' => $password], method: 'POST');
+        $data = json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
+        if ($response['statusCode'] == 201) {
+            return (new User())
+                ->setRefreshToken($data['refreshToken'])
+                ->setApiToken($data['token']);
+        }
+        throw new CustomUserMessageAuthenticationException($data['message']);
     }
 
     public function request(
@@ -81,8 +98,7 @@ class BillingClient
 
         $response = curl_exec($curl);
         $statusCode = curl_getinfo($curl)['http_code'];
-
-        if ($statusCode == 500) {
+        if ($statusCode >= 500 || curl_error($curl)) {
             throw new BillingUnavailableException();
         }
 

@@ -17,6 +17,8 @@ class User implements UserInterface
 
     private $refreshToken = null;
 
+    private $balance = null;
+
     public function getRefreshToken(): ?string
     {
         return $this->refreshToken;
@@ -25,6 +27,18 @@ class User implements UserInterface
     public function setRefreshToken(string $refreshToken): static
     {
         $this->refreshToken = $refreshToken;
+
+        return $this;
+    }
+
+    public function getBalance(): ?string
+    {
+        return $this->balance;
+    }
+
+    public function setBalance(string $balance): static
+    {
+        $this->balance = $balance;
 
         return $this;
     }

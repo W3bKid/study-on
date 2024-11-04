@@ -12,9 +12,12 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Count;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\LessThan;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Range;
+use Symfony\Component\Validator\Constraints\Type;
 
 class LessonType extends AbstractType
 {
@@ -63,13 +66,15 @@ class LessonType extends AbstractType
             ->add("order_number", IntegerType::class, [
                 "label" => "Порядковый номер",
                 "constraints" => [
-                    new LessThan(
-                        10000,
-                        message: "Порядковый номер не может быть больше 10 000"
-                    ),
                     new NotBlank(
                         message: "Поле обязательно должно быть заполнено"
                     ),
+                    new Type(['type' => 'integer', 'message' => 'This value should be of type integer.']),
+                    new Range(
+                        notInRangeMessage: "Порядковый номер не должен быть меньше 0 и больше 10 000",
+                        min: 0,
+                        max: 10000
+                    )
                 ],
             ])
             ->add("course", HiddenType::class, [

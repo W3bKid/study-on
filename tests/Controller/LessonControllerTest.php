@@ -5,6 +5,8 @@ namespace App\Test\Controller;
 use App\Entity\Course;
 use App\Entity\Lesson;
 use App\Kernel;
+use App\Service\BillingClient;
+use App\Tests\Mock\BillingClientMock;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -24,25 +26,35 @@ class LessonControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        $this->client->disableReboot();
+
+        $this->client->getContainer()->set(
+            BillingClient::class,
+            new BillingClientMock()
+        );
+
+        $this->auth();
         $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Lesson::class);
     }
 
-    public function testIndex(): void
+    public function auth()
     {
-        $crawler = $this->client->request("GET", $this->path);
+        $crawler = $this->client->request('GET', '/login');
+        $submitBtn = $crawler->selectButton('Sign in');
 
-        self::assertResponseStatusCodeSame(200);
-        self::assertPageTitleContains("Lesson index");
-        self::assertAnySelectorTextNotContains("td", "no records found");
+        $login = $submitBtn->form([
+            'email' => 'admin@billing.ru',
+            'password' => 12345678,
+        ]);
+        $this->client->submit($login);
+        $this->client->followRedirect();
     }
 
     public function testNew(): void
     {
         $lessons = $this->repository->findAll();
-
         $course = $lessons[0]->getCourse();
-
         $courseId = $course->getId();
 
         $this->client->request(

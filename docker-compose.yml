@@ -4,7 +4,6 @@ volumes:
 services:
   nginx:
     image: nginx:alpine
-    container_name: billing.study-on.local
     working_dir: /app
     volumes:
       - ${PWD}:/app
@@ -32,3 +31,7 @@ services:
     links:
       - postgres
     user: ${UID:-1000}:${GID:-1000}
+networks:
+  default:
+    external:
+      name: study-onbilling_default

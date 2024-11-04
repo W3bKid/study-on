@@ -7,8 +7,6 @@ security:
         # used to reload user from session & other features (e.g. switch_user)
         app_user_provider:
             id: App\Security\UserProvider
-        # used to reload user from session & other features (e.g. switch_user)
-
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -19,11 +17,9 @@ security:
             lazy: true
             provider: app_user_provider
             custom_authenticator: App\Security\BillingAuthenticator
-
-#            form_login:
-#                default_target_path: app_course_index
-#                login_path: app_course_index
-#                check_path: app_course_index
+            form_login:
+                default_target_path: app_course_index
+            entry_point: App\Security\BillingAuthenticator
             logout:
                 path: app_logout
                 # where to redirect after logout

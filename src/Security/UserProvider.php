@@ -57,8 +57,6 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
             throw new UnsupportedUserException(sprintf('Invalid user class "%s".', $user::class));
         }
 
-        $token = json_decode($user->getApiToken());
-
         return $this->billingClient->refreshToken($user);
     }
 

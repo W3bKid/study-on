@@ -4,8 +4,12 @@ namespace App\Test\Controller;
 
 use App\DataFixtures\CourseFixtures;
 use App\Entity\Course;
+use App\Security\UserProvider;
+use App\Service\BillingClient;
+use App\Tests\Mock\BillingClientMock;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use http\Client;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\String\ByteString;
@@ -29,22 +33,38 @@ class CourseControllerTest extends WebTestCase
     {
         parent::setUp();
 
-        $this->client = static::createClient();
+        $this->client = self::createClient();
+        $this->client->disableReboot();
+
+        $this->client->getContainer()->set(
+            BillingClient::class,
+            new BillingClientMock()
+        );
+
+        $this->auth();
+
+
+        $userProvider = $this->client->getContainer()->get(UserProvider::class);
         $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Course::class);
         $this->faker = Factory::create();
-//        $this->databaseTool = static::getContainer()
-//            ->get(DatabaseToolCollection::class)
-//            ->get();
-//
-//        $this->databaseTool->loadFixtures([CourseFixtures::class]);
-
         $this->databaseTool = static::getContainer()
             ->get(DatabaseToolCollection::class)
             ->get();
-
         $this->databaseTool->loadFixtures([CourseFixtures::class]);
+    }
 
+    public function auth()
+    {
+        $crawler = $this->client->request('GET', '/login');
+        $submitBtn = $crawler->selectButton('Sign in');
+
+        $login = $submitBtn->form([
+            'email' => 'admin@billing.ru',
+            'password' => 12345678,
+        ]);
+        $this->client->submit($login);
+        $this->client->followRedirect();
     }
 
     public function testIndex(): void
@@ -142,7 +162,6 @@ class CourseControllerTest extends WebTestCase
         self::assertSame($newCode, $updatedCourse->getCharacterCode());
         self::assertSame($newTitle, $updatedCourse->getTitle());
         self::assertSame($newDescription, $updatedCourse->getDescription());
-
         self::assertResponseRedirects("/courses/");
     }
 
