@@ -71,12 +71,73 @@ class BillingClient
         throw new CustomUserMessageAuthenticationException($data['message']);
     }
 
+    public function getCourses()
+    {
+        $url =  $this->baseApiPath . 'courses';
+        $response = $this->request(url: $url);
+        if ($response['statusCode'] == 200) {
+            return json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
+        }
+        throw new CustomUserMessageAuthenticationException($response['message'], code: $response['statusCode']);
+    }
+
+    /**
+     * @param string $token
+     * @param string|null $type
+     * @param bool $skipExpired
+     * @param string|null $courseCode
+     * @return false|mixed
+     * @throws BillingUnavailableException
+     */
+    public function getTransactions(
+        string $token,
+        string $type = null,
+        bool $skipExpired = false,
+        string $courseCode = null
+    ) {
+        $url =  $this->baseApiPath . 'transactions/';
+        $parameters = [];
+
+        if (null !== $type) {
+            $parameters['filter[type]'] = $type;
+        }
+
+        if (null !== $courseCode) {
+            $parameters['filter[course_code]'] = $courseCode;
+        }
+
+        if ($skipExpired) {
+            $parameters['filter[skip_expired]'] = $skipExpired;
+        }
+
+        $url = $this->setQueryParams($url, $parameters);
+        $response = $this->request(url: $url, headers: ['Authorization' => "Bearer $token"], method: 'GET');
+        if ($response['statusCode'] == 200) {
+            return $response['data'];
+        }
+        return false;
+    }
+
+    public function getCourseByCode(string $courseCode)
+    {
+        $url =  $this->baseApiPath . 'courses/' . $courseCode;
+
+        $response = $this->request(url: $url, method: 'GET');
+
+        if ($response['statusCode'] == 200) {
+            return json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
+        }
+
+        return false;
+    }
+
     public function request(
         string $url,
         array $body = [],
         array $headers = [],
         string $method = 'GET',
     ): array {
+
         $curl = curl_init();
         $curlHeaders = [];
         foreach ($headers as $header => $value) {
@@ -98,14 +159,32 @@ class BillingClient
 
         $response = curl_exec($curl);
         $statusCode = curl_getinfo($curl)['http_code'];
-        if ($statusCode >= 500 || curl_error($curl)) {
+        if ($statusCode >= 500 || (bool)curl_error($curl)) {
+            dd($statusCode, (bool)curl_error($curl), $response);
             throw new BillingUnavailableException();
         }
 
         curl_close($curl);
+
+//        dd(curl_getinfo($curl), (bool)curl_error($curl));
+
         return [
             'data' => $response,
             'statusCode' => $statusCode,
         ];
+    }
+
+    public function setQueryParams(string $url, array $queryParams)
+    {
+
+        foreach ($queryParams as $key => $value) {
+            if (strpos($url, "?")) {
+                $url .= "&" . $key . "=" . $value;
+            } else {
+                $url .= "?" . $key . "=" . $value;
+            }
+        }
+
+        return $url;
     }
 }

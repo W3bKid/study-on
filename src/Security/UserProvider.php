@@ -3,12 +3,17 @@
 namespace App\Security;
 
 use App\Service\BillingClient;
+use App\Service\JWTokenParse;
+use DateTime;
+use DateTimeZone;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
+
+use function Symfony\Component\Clock\now;
 
 class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
 {
@@ -57,7 +62,19 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
             throw new UnsupportedUserException(sprintf('Invalid user class "%s".', $user::class));
         }
 
-        return $this->billingClient->refreshToken($user);
+        $payload = JWTokenParse::parseJWToken($user->getApiToken());
+
+        $expiredTime = new \DateTime('@' . $payload['exp']);
+        $now = new DateTime();
+
+        if ($expiredTime->getTimezone()->getName() !== $now->getTimezone()->getName()) {
+            $expiredTime->setTimezone(new DateTimeZone('Europe/Moscow'));
+            $now->setTimezone(new DateTimeZone('Europe/Moscow'));
+        }
+
+
+
+        return $expiredTime >= $now ? $this->billingClient->refreshToken($user) : $user;
     }
 
     /**

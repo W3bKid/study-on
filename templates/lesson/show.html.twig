@@ -13,6 +13,8 @@
         </a>
     </p>
 
+
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
     <div class="d-flex flex-row gap-1 m-3">
        	<a class="btn btn-outline-secondary" href="{{ path('app_lesson_edit', {'id': lesson.id}) }}">Редактировать</a>
 
@@ -24,7 +26,6 @@
  			<div class="content">{{ line }}</div>
         {% endfor %}
 	</div>
-
 
 
 {% endblock %}

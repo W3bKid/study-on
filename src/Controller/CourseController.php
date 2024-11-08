@@ -4,8 +4,10 @@ namespace App\Controller;
 
 use App\Entity\Course;
 use App\Form\CourseType;
+use App\Helper\ArrayColumnToKeyHelper;
 use App\Repository\CourseRepository;
 use App\Repository\LessonRepository;
+use App\Service\BillingClient;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,8 +22,31 @@ class CourseController extends AbstractController
     #[Route("/", name: "app_course_index", methods: ["GET"])]
     public function index(CourseRepository $courseRepository): Response
     {
+        $user = $this->getUser();
+        $billingTransactions = null;
+        if ($user) {
+            $billingTransactions = (new BillingClient())->getTransactions(
+                $user->getApiToken(),
+                'Payment',
+                true,
+            );
+        }
+
+        $billingCourses = ArrayColumnToKeyHelper::mapToKey(
+            (new BillingClient())->getCourses(),
+            'character_code'
+        );
+
+        $courses = ArrayColumnToKeyHelper::mapToKey($courseRepository->findAllToArray(), 'character_code');
+
+        foreach ($courses as $key => &$course) {
+            $course['type'] = $billingCourses[$key]['type'];
+            $course['price'] = $billingCourses[$key]['price'] ?? null;
+        }
+
         return $this->render("course/index.html.twig", [
-            "courses" => $courseRepository->findAll(),
+            "courses" => $courses,
+            "billingTransactions" => json_decode($billingTransactions, JSON_OBJECT_AS_ARRAY),
         ]);
     }
 
@@ -56,10 +81,28 @@ class CourseController extends AbstractController
     public function show(Course $course): Response
     {
         $lessons = $course->getLessons()->getValues();
+        $user = $this->getUser();
+        $billingCourse = (new BillingClient())->getCourseByCode($course->getCharacterCode());
+        $billingUser = (new BillingClient())->currentUser($user->getApiToken());
+
+        $billingTransactions = null;
+        if ($user) {
+            $billingTransactions = (new BillingClient())->getTransactions(
+                $user->getApiToken(),
+                'Payment',
+                true,
+                $course->getCharacterCode()
+            );
+        }
+
+        $isCoursePaid = $billingTransactions > 0;
 
         return $this->render("course/show.html.twig", [
             "course" => $course,
             "lessons" => $lessons,
+            "billingCourse" => $billingCourse,
+            "isCoursePaid" => $isCoursePaid,
+            'billingUser' => $billingUser
         ]);
     }
 

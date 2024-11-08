@@ -46,20 +46,31 @@
 
     <div class="row row-cols-1 row-cols-md-2 g-4 m-3" >
         {% for course in courses %}
-        <div class="col">
-			<div class="card">
-				<div class="card-body">
-					<h5 class="card-title">
-						<p >{{ course.title }}</p>
-					</h5>
-					<p class="card-text">{{ course.description }}</p>
+            {% set billingTransactions = billingTransactions['course_code'] ?? null %}
+            {% set isPaid = billingTransactions is not null %}
 
-					<a href="{{ path('app_course_show', {'id': course.id}) }}" class="blockquote">
-						Пройти
-					</a>
-				</div>
-			</div>
-        </div>
+            {% if course.type is same as('buy') %}
+                {% set paidHelp = isPaid ? 'Куплено' : course.price ~ '₽' %}
+            {% elseif course.type is same as('rent') %}
+                {% set paidHelp = isPaid ? 'Арендовано до ' ~ transaction.expires_at : course.price ~ '₽ в неделю'  %}
+            {% else %}
+                {% set paidHelp = 'Бесплатный' %}
+            {% endif %}
+
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <p >{{ course.title }}</p>
+                        </h5>
+                        <p class="card-text">{{ course.description }}</p>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ paidHelp }}</h6>
+                        <a href="{{ path('app_course_show', {'id': course.id}) }}" class="blockquote">
+                            Пройти
+                        </a>
+                    </div>
+                </div>
+            </div>
         {% else %}
             <tr>
                 <td colspan="5">no records found</td>

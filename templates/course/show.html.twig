@@ -10,15 +10,39 @@
     <h1 class="m-3">{{ course.title }}</h1>
     <p class="mt-2 mb-2 m-3">{{ course.description }}</p>
 
-
+    {% if not is_granted('ROLE_USER') %}
+        <h3>Войдите, чтобы иметь доступ к покупке курсов</h3>
+    {% elseif not isCoursePaid %}
+        <h3>Недостаточно средств для оплаты</h3>
+        {% if billingUser.balance > billingCourse['price'] %}
+            <div {{ stimulus_controller('modal-form') }}>
+                <button type="button" class="btn btn-primary" data-action="modal-form#openModal">
+                    {% if billingCourse['type'] is same as('buy') %}
+                        Купить
+                    {% elseif billingCourse['type'] is same as('rent') %}
+                        Арендовать
+                    {% endif %}
+                </button>
+                {{ include('course/_modal.html.twig') }}
+            </div>
+        {% else %}
+            <h3>Недостаточно средств для оплаты</h3>
+        {% endif %}
+    {% elseif isCoursePaid is not null %}
+        <div {{ stimulus_controller('modal-form', { 'isShown': 'true' } ) }}>
+            {{ include('course/paymentModal.html.twig') }}
+        </div>
+    {% endif %}
 
     <h2 class="m-3">Уроки</h2>
     <ol class="">
         {% for key, lesson in lessons %}
             <li class="ml-3">
-                <a href="{{ path('app_lesson_show', {'id': lesson.id}) }}">
-                    {{ lesson.title }}
-                </a>
+                {% if (is_granted("ROLE_USER") and isCoursePaid) or is_granted("ROLE_SUPER_ADMIN") %}
+                    <a href="{{ path('app_lesson_show', {'id': lesson.id}) }}">{{ lesson.title }}</a>
+                {% else %}
+                    <p class="mb-0">{{ lesson.title }}</p>
+                {% endif %}
             </li>
         {% endfor %}
     </ol>

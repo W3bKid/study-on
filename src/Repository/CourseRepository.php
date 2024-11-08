@@ -16,6 +16,11 @@ class CourseRepository extends ServiceEntityRepository
         parent::__construct($registry, Course::class);
     }
 
+    public function findAllToArray()
+    {
+        return $this->createQueryBuilder('course')->getQuery()->getArrayResult();
+    }
+
     //    /**
     //     * @return Course[] Returns an array of Course objects
     //     */
