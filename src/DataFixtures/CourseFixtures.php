@@ -13,6 +13,8 @@ class CourseFixtures extends Fixture
         'Основы программирования' => [
             'description' => 'Этот курс предназначен для начинающих, которые хотят освоить основы программирования.',
             'character_code' => 'osnovy_programmirovaniya',
+            'price' => 123,
+            'type' => 1,
             'lessons' => [
                 [
                     'title' => 'Урок 1: Введение в программирование: что это и зачем?',
@@ -39,6 +41,8 @@ class CourseFixtures extends Fixture
         'Основы личной финансовой грамотности' => [
             'description' => 'Вы научитесь составлять бюджет, планировать сбережения и обязательно разберетесь в тонкостях кредитования.',
             'character_code' => 'osnovy_lichnoj_finansovoj_gramotnosti',
+            'price' => 123,
+            'type' => 0,
             'lessons' => [
                 [
                     'title' => 'Урок 1: Бюджетирование: как составить личный бюджет',
@@ -65,6 +69,8 @@ class CourseFixtures extends Fixture
         'Основы фотографии' => [
             'description' => 'Данный курс предлагает вводное обучение основам фотографии. Вы узнаете о композиции, освещении и методах постобработки, которые помогут улучшить качество ваших снимков.',
             'character_code' => 'osnovy_fotografii',
+            'price' => 123,
+            'type' => 3,
             'lessons' => [
                 [
                     'title' => 'Урок 1: Введение в фотографию: теория и практика',
@@ -92,6 +98,10 @@ class CourseFixtures extends Fixture
                     'order_number' => 4
                 ]
             ],
+            'Непокупаемый' => [
+                'description' => 'Данный курс предлагает вводное обучение основам фотографии. Вы узнаете о композиции, освещении и методах постобработки, которые помогут улучшить качество ваших снимков.',
+                'character_code' => 'cant_bue',
+            ]
         ]
     ];
 
@@ -104,6 +114,8 @@ class CourseFixtures extends Fixture
             $course->setTitle($title);
             $course->setDescription($courseData['description']);
             $course->setCharacterCode($courseData['character_code']);
+            $course->setPrice($courseData['price']);
+            $course->setType($courseData['type']);
             $manager->persist($course);
 
             foreach($courseData['lessons'] as $lessonData) {
@@ -114,8 +126,6 @@ class CourseFixtures extends Fixture
                 $lesson->setOrderNumber($lessonData['order_number']);
                 $manager->persist($lesson);
             }
-
-
             $manager->flush();
         }
 

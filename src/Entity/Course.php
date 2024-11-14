@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\CourseRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -50,6 +51,12 @@ class Course
     #[ORM\JoinColumn(referencedColumnName: "id", onDelete: "CASCADE")]
     #[ORM\OrderBy(["order_number" => "ASC"])]
     private Collection $lessons;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $price = null;
+
+    #[ORM\Column(type: Types::SMALLINT)]
+    private ?int $type = null;
 
     public function __construct()
     {
@@ -130,5 +137,29 @@ class Course
     public function __toString()
     {
         return $this->id;
+    }
+
+    public function getPrice(): ?float
+    {
+        return $this->price;
+    }
+
+    public function setPrice(?float $price): static
+    {
+        $this->price = $price;
+
+        return $this;
+    }
+
+    public function getType(): ?int
+    {
+        return $this->type;
+    }
+
+    public function setType(int $type): static
+    {
+        $this->type = $type;
+
+        return $this;
     }
 }

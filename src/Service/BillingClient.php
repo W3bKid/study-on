@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\DTO\CourseDTO;
 use App\Exception\BillingUnavailableException;
 use App\Security\User;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
@@ -9,14 +10,12 @@ use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 
 class BillingClient
 {
-    private string $billingDomain;
-    private string $billingVersion;
+    private string $billingDomain = 'billing.study-on.local';
+    private string $billingVersion = '/api/v1/';
     private string $baseApiPath;
 
     public function __construct()
     {
-        $this->billingDomain = $_ENV['BILLING_DOMAIN'];
-        $this->billingVersion = $_ENV['BILLING_VERSION'];
         $this->baseApiPath = $this->billingDomain . $this->billingVersion;
     }
 
@@ -78,6 +77,7 @@ class BillingClient
         if ($response['statusCode'] == 200) {
             return json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
         }
+
         throw new CustomUserMessageAuthenticationException($response['message'], code: $response['statusCode']);
     }
 
@@ -121,14 +121,46 @@ class BillingClient
     public function getCourseByCode(string $courseCode)
     {
         $url =  $this->baseApiPath . 'courses/' . $courseCode;
-
         $response = $this->request(url: $url, method: 'GET');
-
         if ($response['statusCode'] == 200) {
             return json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
         }
 
         return false;
+    }
+
+    public function createCourse(CourseDTO $courseDTO, User $user)
+    {
+        $url =  $this->baseApiPath . 'courses/';
+        $headers = ['Authorization' => 'Bearer ' . $user->getApiToken()];
+        return $this->request(url: $url, method: 'POST', body: $courseDTO->toArray(), headers: $headers);
+    }
+
+    public function editCourse(CourseDTO $courseDTO, User $user)
+    {
+        $url =  $this->baseApiPath . 'courses/' . $courseDTO->getCharacterCode();
+        $headers = ['Authorization' => 'Bearer ' . $user->getApiToken()];
+        return $this->request(url: $url, method: 'PUT', body: $courseDTO->toArray(), headers: $headers);
+    }
+
+    public function courseIsPaid(string $characterCode, User $user)
+    {
+        $url =  $this->baseApiPath . 'courses/' . $characterCode . '/is-paid';
+        $headers = ['Authorization' => 'Bearer ' . $user->getApiToken()];
+        $response = $this->request($url, headers: $headers);
+        if ($response['statusCode'] == 200) {
+            return json_decode($response['data'], true)['message'];
+        }
+
+        throw new BillingUnavailableException();
+    }
+
+    public function pay(string $token, string $characterCode)
+    {
+        $url =  $this->baseApiPath . 'courses/' . $characterCode . '/pay';
+        $headers = ['Authorization' => 'Bearer ' . $token];
+        $response = $this->request($url, headers: $headers, method: 'POST');
+        return json_decode($response['data'], JSON_OBJECT_AS_ARRAY);
     }
 
     public function request(
@@ -137,7 +169,6 @@ class BillingClient
         array $headers = [],
         string $method = 'GET',
     ): array {
-
         $curl = curl_init();
         $curlHeaders = [];
         foreach ($headers as $header => $value) {
@@ -159,14 +190,11 @@ class BillingClient
 
         $response = curl_exec($curl);
         $statusCode = curl_getinfo($curl)['http_code'];
-        if ($statusCode >= 500 || (bool)curl_error($curl)) {
-            dd($statusCode, (bool)curl_error($curl), $response);
+
+        if ($statusCode >= 500 || curl_error($curl)) {
             throw new BillingUnavailableException();
         }
-
         curl_close($curl);
-
-//        dd(curl_getinfo($curl), (bool)curl_error($curl));
 
         return [
             'data' => $response,
@@ -176,7 +204,6 @@ class BillingClient
 
     public function setQueryParams(string $url, array $queryParams)
     {
-
         foreach ($queryParams as $key => $value) {
             if (strpos($url, "?")) {
                 $url .= "&" . $key . "=" . $value;
@@ -184,7 +211,6 @@ class BillingClient
                 $url .= "?" . $key . "=" . $value;
             }
         }
-
         return $url;
     }
 }

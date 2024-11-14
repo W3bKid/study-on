@@ -49,9 +49,9 @@
             {% set billingTransactions = billingTransactions['course_code'] ?? null %}
             {% set isPaid = billingTransactions is not null %}
 
-            {% if course.type is same as('buy') %}
+            {% if course.type is same as('Full Payment') %}
                 {% set paidHelp = isPaid ? 'Куплено' : course.price ~ '₽' %}
-            {% elseif course.type is same as('rent') %}
+            {% elseif course.type is same as('Rental') %}
                 {% set paidHelp = isPaid ? 'Арендовано до ' ~ transaction.expires_at : course.price ~ '₽ в неделю'  %}
             {% else %}
                 {% set paidHelp = 'Бесплатный' %}
@@ -61,7 +61,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <p >{{ course.title }}</p>
+                            <p>{{ course.title }}</p>
                         </h5>
                         <p class="card-text">{{ course.description }}</p>
                         <h6 class="card-subtitle mb-2 text-muted">{{ paidHelp }}</h6>

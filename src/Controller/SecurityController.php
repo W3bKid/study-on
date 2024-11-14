@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Exception\BillingUnavailableException;
 use App\Form\RegistrationFormType;
+use App\Repository\CourseRepository;
 use App\Security\BillingAuthenticator;
 use App\Service\BillingClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -45,10 +46,12 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
+        $transactions = $this->billingClient->getTransactions($user->getApiToken());
         $userInformation = $this->billingClient->currentUser($user->getApiToken());
 
         return $this->render('security/profile.html.twig', [
             'user' => $userInformation,
+            'transactions' => $transactions,
         ]);
     }
 
@@ -90,6 +93,18 @@ class SecurityController extends AbstractController
         return $this->render('security/register.html.twig', [
             'form' => $form,
             'error' => null
+        ]);
+    }
+
+    #[Route(path: '/profile/transactions', name: 'app_user_transactions', methods: ['GET'])]
+    public function userTransactions(CourseRepository $courseRepository)
+    {
+        $transactions = $this->billingClient->getTransactions($this->getUser()->getApiToken());
+
+        $transactions = json_decode($transactions, true);
+
+        return $this->render('security/transactions.html.twig', [
+            'transactions' => $transactions,
         ]);
     }
 }

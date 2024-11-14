@@ -2,15 +2,16 @@
 
 namespace App\Controller;
 
+use App\DTO\CourseDTO;
 use App\Entity\Course;
+use App\Exception\BillingUnavailableException;
 use App\Form\CourseType;
 use App\Helper\ArrayColumnToKeyHelper;
 use App\Repository\CourseRepository;
-use App\Repository\LessonRepository;
 use App\Service\BillingClient;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -19,13 +20,19 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route("/courses")]
 class CourseController extends AbstractController
 {
+    private BillingClient $billingClient;
+    public function __construct(BillingClient $billingClient)
+    {
+        $this->billingClient = $billingClient;
+    }
+
     #[Route("/", name: "app_course_index", methods: ["GET"])]
     public function index(CourseRepository $courseRepository): Response
     {
         $user = $this->getUser();
         $billingTransactions = null;
         if ($user) {
-            $billingTransactions = (new BillingClient())->getTransactions(
+            $billingTransactions = $this->billingClient->getTransactions(
                 $user->getApiToken(),
                 'Payment',
                 true,
@@ -33,9 +40,10 @@ class CourseController extends AbstractController
         }
 
         $billingCourses = ArrayColumnToKeyHelper::mapToKey(
-            (new BillingClient())->getCourses(),
+            $this->billingClient->getCourses(),
             'character_code'
         );
+
 
         $courses = ArrayColumnToKeyHelper::mapToKey($courseRepository->findAllToArray(), 'character_code');
 
@@ -43,6 +51,7 @@ class CourseController extends AbstractController
             $course['type'] = $billingCourses[$key]['type'];
             $course['price'] = $billingCourses[$key]['price'] ?? null;
         }
+
 
         return $this->render("course/index.html.twig", [
             "courses" => $courses,
@@ -61,6 +70,13 @@ class CourseController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $courseDTO = (new CourseDTO())
+                ->setType(\App\Enum\CourseType::tryFrom($course->getType())->getName())
+                ->setTitle($course->getTitle())
+                ->setPrice($course->getPrice())
+                ->setCharacterCode($course->getCharacterCode());
+
+            $this->billingClient->createCourse($courseDTO, $this->getUser());
             $entityManager->persist($course);
             $entityManager->flush();
 
@@ -82,27 +98,32 @@ class CourseController extends AbstractController
     {
         $lessons = $course->getLessons()->getValues();
         $user = $this->getUser();
-        $billingCourse = (new BillingClient())->getCourseByCode($course->getCharacterCode());
-        $billingUser = (new BillingClient())->currentUser($user->getApiToken());
-
-        $billingTransactions = null;
+        $billingUser = null;
+        $isCoursePaid = false;
+        $transactions = null;
+        $billingCourse = null;
         if ($user) {
-            $billingTransactions = (new BillingClient())->getTransactions(
-                $user->getApiToken(),
-                'Payment',
-                true,
-                $course->getCharacterCode()
-            );
+            try {
+                $billingCourse = $this->billingClient->getCourseByCode($course->getCharacterCode());
+                $billingCourse['type'] = \App\Enum\CourseType::tryFrom($billingCourse['type'])->getName();
+                $billingUser = $this->billingClient->currentUser($user->getApiToken());
+                $isCoursePaid = $this->billingClient->courseIsPaid($course->getCharacterCode(), $user);
+                $transactions = $this->billingClient->getTransactions(
+                    $course->getCharacterCode(),
+                    courseCode: $user->getApiToken()
+                );
+            } catch (\Exception $exception) {
+                throw new BillingUnavailableException();
+            }
         }
-
-        $isCoursePaid = $billingTransactions > 0;
 
         return $this->render("course/show.html.twig", [
             "course" => $course,
             "lessons" => $lessons,
             "billingCourse" => $billingCourse,
             "isCoursePaid" => $isCoursePaid,
-            'billingUser' => $billingUser
+            "billingUser" => $billingUser,
+            "transactions" => $transactions
         ]);
     }
 
@@ -117,6 +138,13 @@ class CourseController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $courseDTO = (new CourseDTO())
+                ->setType(\App\Enum\CourseType::tryFrom($course->getType())->getName())
+                ->setTitle($course->getTitle())
+                ->setPrice($course->getPrice())
+                ->setCharacterCode($course->getCharacterCode());
+
+            $this->billingClient->editCourse($courseDTO, $this->getUser());
             $entityManager->flush();
 
             return $this->redirectToRoute(
@@ -154,5 +182,38 @@ class CourseController extends AbstractController
             [],
             Response::HTTP_SEE_OTHER
         );
+    }
+
+    #[Route('/{id}/pay', name: 'app_course_pay', methods: ['GET'])]
+    public function pay(
+        Course $course,
+        BillingClient $billingClient
+    ): RedirectResponse {
+
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        try {
+            $response = $billingClient->pay($user->getApiToken(), $course->getCharacterCode());
+            if (isset($response['success']) && $response['success']) {
+                $this->addFlash(
+                    'success',
+                    'Курс успешно приобретен!'
+                );
+            } else {
+                $this->addFlash(
+                    'error',
+                    $response['message']
+                );
+            }
+        } catch (BillingUnavailableException $e) {
+            $this->addFlash(
+                'error',
+                $e->getMessage()
+            );
+        }
+        return $this->redirectToRoute('app_course_index');
     }
 }

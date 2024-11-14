@@ -4,6 +4,7 @@ namespace App\Test\Controller;
 
 use App\DataFixtures\CourseFixtures;
 use App\Entity\Course;
+use App\Enum\CourseType;
 use App\Security\UserProvider;
 use App\Service\BillingClient;
 use App\Tests\Mock\BillingClientMock;
@@ -41,8 +42,10 @@ class CourseControllerTest extends WebTestCase
             new BillingClientMock()
         );
 
-        $this->auth();
-
+        $billingClient = $this->client->getContainer()->get(BillingClient::class);
+        if (!($billingClient instanceof BillingClientMock)) {
+            throw new \Exception('BillingClient не был подменён на BillingClientMock');
+        }
 
         $userProvider = $this->client->getContainer()->get(UserProvider::class);
         $this->manager = static::getContainer()->get("doctrine")->getManager();
@@ -51,20 +54,19 @@ class CourseControllerTest extends WebTestCase
         $this->databaseTool = static::getContainer()
             ->get(DatabaseToolCollection::class)
             ->get();
-        $this->databaseTool->loadFixtures([CourseFixtures::class]);
+        $this->databaseTool->loadFixtures([CourseFixtures::class, ]);
+        $this->auth();
     }
 
     public function auth()
     {
         $crawler = $this->client->request('GET', '/login');
         $submitBtn = $crawler->selectButton('Sign in');
-
         $login = $submitBtn->form([
             'email' => 'admin@billing.ru',
-            'password' => 12345678,
+            'password' => "12345678",
         ]);
         $this->client->submit($login);
-        $this->client->followRedirect();
     }
 
     public function testIndex(): void
@@ -90,6 +92,7 @@ class CourseControllerTest extends WebTestCase
 
     public function testNew(): void
     {
+//        $this->auth();
         $crawler = $this->client->request("GET", $this->path);
 
         $startCount = $this->repository->count([]);
@@ -102,6 +105,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => ByteString::fromRandom(16)->toString(),
             "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => ByteString::fromRandom(32)->toString(),
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseRedirects($this->path);
@@ -113,23 +118,16 @@ class CourseControllerTest extends WebTestCase
 
     public function testShow(): void
     {
-        $fixture = new Course();
-        $fixture->setCharacterCode(ByteString::fromRandom(16)->toString());
-        $fixture->setTitle(ByteString::fromRandom(16)->toString());
-        $fixture->setDescription(ByteString::fromRandom(16)->toString());
-
-        $this->manager->persist($fixture);
-        $this->manager->flush();
+        $this->databaseTool->loadFixtures([CourseFixtures::class]);
+        $course = $this->repository->find(1);
 
         $this->client->request(
             "GET",
-            sprintf("%s%s", $this->path, $fixture->getId())
+            sprintf("%s%s", $this->path, $course->getId())
         );
 
         self::assertResponseStatusCodeSame(200);
         self::assertPageTitleContains("Course");
-
-        // Use assertions to check that the properties are properly displayed.
     }
 
     public function testEdit(): void
@@ -142,6 +140,8 @@ class CourseControllerTest extends WebTestCase
         $fixture->setCharacterCode(ByteString::fromRandom(16)->toString());
         $fixture->setTitle(ByteString::fromRandom(16)->toString());
         $fixture->setDescription(ByteString::fromRandom(255)->toString());
+        $fixture->setPrice(1);
+        $fixture->setType(3);
 
         $this->manager->persist($fixture);
         $this->manager->flush();
@@ -155,6 +155,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => $newCode,
             "course[title]" => $newTitle,
             "course[description]" => $newDescription,
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         $updatedCourse = $this->repository->find($fixture->getId());
@@ -168,23 +170,17 @@ class CourseControllerTest extends WebTestCase
     public function testRemove(): void
     {
         $count = $this->repository->count([]);
-
-        $fixture = new Course();
-        $fixture->setCharacterCode(ByteString::fromRandom(16)->toString());
-        $fixture->setTitle(ByteString::fromRandom(16)->toString());
-        $fixture->setDescription(ByteString::fromRandom(255)->toString());
-
-        $this->manager->persist($fixture);
-        $this->manager->flush();
+        $this->databaseTool->loadFixtures([CourseFixtures::class]);
+        $course = $this->repository->find(1);
 
         $this->client->request(
             "GET",
-            sprintf("%s%s", $this->path, $fixture->getId())
+            sprintf("%s%s", $this->path, $course->getId())
         );
         $this->client->submitForm("Удалить");
 
         self::assertResponseRedirects("/courses/");
-        self::assertSame($count, $this->repository->count([]));
+        self::assertSame($count - 1, $this->repository->count([]));
     }
 
     public function testEmptyTitle(): void
@@ -195,6 +191,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => "noviy_course",
             "course[title]" => "",
             "course[description]" => "Самый новый курс",
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseIsUnprocessable();
@@ -208,6 +206,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => "noviy_course",
             "course[title]" => ByteString::fromRandom(300)->toString(),
             "course[description]" => "Самый новый курс",
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseIsUnprocessable();
@@ -221,6 +221,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => "",
             "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => "Самый новый курс",
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseIsUnprocessable();
@@ -234,6 +236,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => ByteString::fromRandom(300)->toString(),
             "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => "Самый новый курс",
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseIsUnprocessable();
@@ -250,6 +254,8 @@ class CourseControllerTest extends WebTestCase
             "course[character_code]" => $course->getCharacterCode(),
             "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => "Самый новый курс",
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseIsUnprocessable();
@@ -265,6 +271,8 @@ class CourseControllerTest extends WebTestCase
             )->toString(),
             "course[title]" => ByteString::fromRandom(16)->toString(),
             "course[description]" => "Самый новый курс",
+            "course[type]" => 1,
+            "course[price]" => 12,
         ]);
 
         self::assertResponseIsUnprocessable();

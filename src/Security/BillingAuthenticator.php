@@ -39,12 +39,8 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
             $tokens = $this->billingClient->auth(username: $email, password: $password);
             $token = $tokens['token'];
             $refreshToken = $tokens['refreshToken'];
-
-
             $user = function () use ($token, $refreshToken): UserInterface {
                 $user = $this->billingClient->currentUser($token);
-
-
                 return $user->setRefreshToken($refreshToken);
             };
         } catch (\Exception $e) {

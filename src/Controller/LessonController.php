@@ -6,8 +6,10 @@ use App\Entity\Lesson;
 use App\Form\LessonType;
 use App\Repository\CourseRepository;
 use App\Repository\LessonRepository;
+use App\Service\BillingClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Finder\Exception\AccessDeniedException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -16,6 +18,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route("/lessons")]
 class LessonController extends AbstractController
 {
+    private BillingClient $billingClient;
+
+    public function __construct(BillingClient $billingClient)
+    {
+        $this->billingClient = $billingClient;
+    }
+
 //    #[Route("/", name: "app_lesson_index", methods: ["GET"])]
 //    public function index(LessonRepository $lessonRepository): Response
 //    {
@@ -62,7 +71,12 @@ class LessonController extends AbstractController
     public function show(Lesson $lesson): Response
     {
         $lesson->setCourse($lesson->getCourse());
+        $isPaid = $this->billingClient->courseIsPaid($lesson->getCourse()->getCharacterCode(), $this->getUser());
 
+
+        if (!$isPaid) {
+            throw new AccessDeniedException();
+        }
         return $this->render("lesson/show.html.twig", [
             "lesson" => $lesson,
         ]);
@@ -97,29 +111,15 @@ class LessonController extends AbstractController
     #[Route("/{id}", name: "app_lesson_delete", methods: ["POST"])]
     #[IsGranted("ROLE_SUPER_ADMIN")]
     public function delete(
-        Request $request,
         Lesson $lesson,
         EntityManagerInterface $entityManager
     ): Response {
-        if (
-            $this->isCsrfTokenValid(
-                "delete" . $lesson->getId(),
-                $request->getPayload()->getString("_token")
-            )
-        ) {
-            $entityManager->remove($lesson);
-            $entityManager->flush();
-
-            return $this->redirectToRoute(
-                "app_course_show",
-                ["id" => $lesson->getCourse()->getId()],
-                Response::HTTP_SEE_OTHER
-            );
-        }
+        $entityManager->remove($lesson);
+        $entityManager->flush();
 
         return $this->redirectToRoute(
-            "app_lesson_index",
-            [],
+            "app_course_show",
+            ["id" => $lesson->getCourse()->getId()],
             Response::HTTP_SEE_OTHER
         );
     }

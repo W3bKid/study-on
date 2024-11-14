@@ -61,7 +61,6 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
         if (!$user instanceof User) {
             throw new UnsupportedUserException(sprintf('Invalid user class "%s".', $user::class));
         }
-
         $payload = JWTokenParse::parseJWToken($user->getApiToken());
 
         $expiredTime = new \DateTime('@' . $payload['exp']);
@@ -72,9 +71,7 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
             $now->setTimezone(new DateTimeZone('Europe/Moscow'));
         }
 
-
-
-        return $expiredTime >= $now ? $this->billingClient->refreshToken($user) : $user;
+        return $expiredTime <= $now ? $this->billingClient->refreshToken($user) : $user;
     }
 
     /**

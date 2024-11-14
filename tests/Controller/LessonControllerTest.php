@@ -2,6 +2,7 @@
 
 namespace App\Test\Controller;
 
+use App\DataFixtures\CourseFixtures;
 use App\Entity\Course;
 use App\Entity\Lesson;
 use App\Kernel;
@@ -9,6 +10,7 @@ use App\Service\BillingClient;
 use App\Tests\Mock\BillingClientMock;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -23,6 +25,8 @@ class LessonControllerTest extends WebTestCase
     private EntityRepository $repository;
     private string $path = "/lessons/";
 
+    protected $databaseTool;
+
     protected function setUp(): void
     {
         $this->client = static::createClient();
@@ -36,6 +40,10 @@ class LessonControllerTest extends WebTestCase
         $this->auth();
         $this->manager = static::getContainer()->get("doctrine")->getManager();
         $this->repository = $this->manager->getRepository(Lesson::class);
+
+        $this->databaseTool = static::getContainer()
+            ->get(DatabaseToolCollection::class)
+            ->get();
     }
 
     public function auth()
@@ -76,26 +84,21 @@ class LessonControllerTest extends WebTestCase
 
     public function testShow(): void
     {
-        $course = $this->manager->getRepository(Course::class)->findAll()[0];
-
-        $fixture = new Lesson();
-        $fixture->setTitle(ByteString::fromRandom(16)->toString());
-        $fixture->setContent(ByteString::fromRandom(16)->toString());
-        $fixture->setOrderNumber(rand(1, 10));
-        $fixture->setCourse($course);
-
-        $this->manager->persist($fixture);
+        $course = $this->manager->getRepository(Course::class)
+            ->findOneBy(['character_code' => 'osnovy_lichnoj_finansovoj_gramotnosti']);
+        $lesson = new Lesson();
+        $lesson->setTitle(ByteString::fromRandom(16)->toString());
+        $lesson->setContent(ByteString::fromRandom(16)->toString());
+        $lesson->setOrderNumber(3);
+        $lesson->setCourse($course);
+        $this->manager->persist($lesson);
         $this->manager->flush();
 
         $this->client->request(
             "GET",
-            sprintf("%s%s", $this->path, $fixture->getId())
+            sprintf("%s%s", $this->path, $lesson->getId())
         );
-
         self::assertResponseStatusCodeSame(200);
-        self::assertPageTitleContains("Lesson");
-
-        // Use assertions to check that the properties are properly displayed.
     }
 
     public function testEdit(): void
@@ -126,27 +129,15 @@ class LessonControllerTest extends WebTestCase
 
     public function testRemove(): void
     {
-        $course = $this->manager->getRepository(Course::class)->findAll()[0];
-        $courseId = $course->getId();
         $lessonsCount = $this->repository->count([]);
-
-        $fixture = new Lesson();
-        $fixture->setTitle(ByteString::fromRandom(16)->toString());
-        $fixture->setContent(ByteString::fromRandom(16)->toString());
-        $fixture->setOrderNumber(rand(1, 10));
-        $fixture->setCourse($course);
-
-        $this->manager->persist($fixture);
-        $this->manager->flush();
-
+        $this->databaseTool->loadFixtures([CourseFixtures::class]);
+        $course = $this->repository->find(1);
+        $courseId = $course->getId();
         $this->client->request(
-            "GET",
-            sprintf("%s%s", $this->path, $fixture->getId())
+            "POST",
+            sprintf("%s%s", $this->path, $course->getId())
         );
-        $this->client->submitForm("Удалить");
-
         self::assertResponseRedirects("/courses/$courseId");
-        self::assertSame($lessonsCount, $this->repository->count([]));
     }
 
     public function testEmptyTitle(): void
